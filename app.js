@@ -61,16 +61,22 @@ function createInitialStats() {
   };
 }
 
+function syncButtonsDisabled() {
+  const coolingDown = isLocked();
+  const passedInRun = state.status === 'RUNNING' && !state.carrier.hasBall;
+  const routineDone = state.status !== 'RUNNING' && state.status !== 'READY' && stats.reps >= TOTAL_REPS;
+
+  actionBtn.disabled = coolingDown || passedInRun || routineDone;
+  resultRestartBtn.disabled = coolingDown;
+  welcomeStartBtn.disabled = coolingDown;
+}
+
 function setCooldown(ms) {
   lockedUntil = performance.now() + ms;
-  actionBtn.disabled = true;
-  resultRestartBtn.disabled = true;
-  welcomeStartBtn.disabled = true;
+  syncButtonsDisabled();
   if (cooldownTimer) clearTimeout(cooldownTimer);
   cooldownTimer = setTimeout(() => {
-    actionBtn.disabled = false;
-    resultRestartBtn.disabled = false;
-    welcomeStartBtn.disabled = false;
+    syncButtonsDisabled();
   }, ms);
 }
 
@@ -155,7 +161,7 @@ function updateUI() {
     statusBanner.className = 'banner running';
     welcomeOverlay.className = 'result-overlay hidden';
     resultOverlay.className = 'result-overlay hidden';
-    actionBtn.textContent = 'Pass Ball';
+    actionBtn.textContent = state.carrier.hasBall ? 'Pass Ball' : 'Ball Passed';
   } else if (stats.reps >= TOTAL_REPS) {
     const isStrong = stats.points >= 60;
     statusBanner.textContent = `Routine Complete (${state.status.replace('_', ' ')}: ${formatDelta(lastRepDelta)})`;
@@ -171,7 +177,6 @@ function updateUI() {
     resultRestartBtn.className = 'result-restart-btn';
     resultOverlay.className = `result-overlay ${isStrong ? 'success' : 'fail'}`;
     actionBtn.textContent = 'Routine Complete';
-    actionBtn.disabled = true;
   } else {
     const isSuccess = state.status === 'TRY';
     statusBanner.textContent = `Rep ${stats.reps}/${TOTAL_REPS} complete`;
@@ -187,6 +192,8 @@ function updateUI() {
     resultOverlay.className = `result-overlay ${isSuccess ? 'success' : 'fail'}`;
     actionBtn.textContent = `Next Rep (${stats.reps + 1}/${TOTAL_REPS})`;
   }
+
+  syncButtonsDisabled();
 }
 
 function handlePrimaryAction() {
