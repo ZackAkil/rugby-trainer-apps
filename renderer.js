@@ -1,23 +1,26 @@
 import { PITCH } from './simulation.js';
 
 function drawIsoscelesTriangle(ctx, x, y, angle, fillColor, strokeColor, label) {
-  const tipLength = 28;
-  const backLength = 16;
-  const halfWidth = 14;
+  const tip = { x: 28, y: 0 };
+  const topBack = { x: -16, y: -14 };
+  const botBack = { x: -16, y: 14 };
+  const cornerRadius = 4;
 
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(angle);
 
   ctx.beginPath();
-  ctx.moveTo(tipLength, 0);
-  ctx.lineTo(-backLength, -halfWidth);
-  ctx.lineTo(-backLength, halfWidth);
+  ctx.moveTo((tip.x + topBack.x) / 2, (tip.y + topBack.y) / 2);
+  ctx.arcTo(topBack.x, topBack.y, botBack.x, botBack.y, cornerRadius);
+  ctx.arcTo(botBack.x, botBack.y, tip.x, tip.y, cornerRadius);
+  ctx.arcTo(tip.x, tip.y, topBack.x, topBack.y, cornerRadius);
   ctx.closePath();
 
   ctx.fillStyle = fillColor;
   ctx.fill();
   ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
   ctx.strokeStyle = strokeColor;
   ctx.stroke();
   ctx.restore();
@@ -55,7 +58,7 @@ export function renderPitch(ctx, state) {
   // Subtle calibration grid
   ctx.strokeStyle = '#f1f5f9';
   ctx.lineWidth = 1;
-  for (let x = 20; x < WIDTH - 20; x += 40) {
+  for (let x = 40; x < WIDTH; x += 40) {
     ctx.beginPath();
     ctx.moveTo(x, 0);
     ctx.lineTo(x, HEIGHT);
@@ -63,20 +66,15 @@ export function renderPitch(ctx, state) {
   }
   for (let y = 0; y < HEIGHT; y += 40) {
     ctx.beginPath();
-    ctx.moveTo(20, y);
-    ctx.lineTo(WIDTH - 20, y);
+    ctx.moveTo(0, y);
+    ctx.lineTo(WIDTH, y);
     ctx.stroke();
   }
 
-  // Side touchlines
-  ctx.strokeStyle = '#0a0a0a';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(20, 0, WIDTH - 40, HEIGHT);
-
   // Try line
   ctx.beginPath();
-  ctx.moveTo(20, TRY_LINE_Y);
-  ctx.lineTo(WIDTH - 20, TRY_LINE_Y);
+  ctx.moveTo(0, TRY_LINE_Y);
+  ctx.lineTo(WIDTH, TRY_LINE_Y);
   ctx.strokeStyle = '#0a0a0a';
   ctx.lineWidth = 2.5;
   ctx.stroke();
@@ -88,8 +86,8 @@ export function renderPitch(ctx, state) {
   ctx.lineWidth = 1.5;
   [260, 480].forEach((y) => {
     ctx.beginPath();
-    ctx.moveTo(20, y);
-    ctx.lineTo(WIDTH - 20, y);
+    ctx.moveTo(0, y);
+    ctx.lineTo(WIDTH, y);
     ctx.stroke();
   });
   ctx.restore();
