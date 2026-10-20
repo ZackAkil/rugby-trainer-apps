@@ -1,4 +1,5 @@
 # 2-on-1 Lab
+## https://zackakil.github.io/rugby-trainer-apps/
 
 A minimal 2D top-down web app for practicing 2-on-1 rugby pass decision-making and timing.
 
