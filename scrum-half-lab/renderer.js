@@ -210,7 +210,7 @@ export function renderPitch(ctx, state, dragState) {
   // Attackers (Blue)
   state.attackers.forEach((a) => {
     let sub = '';
-    if (a.role === 'SCRUM_HALF') sub = '9 (YOU)';
+    if (a.role === 'SCRUM_HALF') sub = 'DUMMY HALF';
     else if (a.role === 'TAGGED') sub = 'RUCK';
     else if (a.role === 'RUNNER') sub = 'LINE';
     drawPlayerTriangle(ctx, a.x, a.y, a.angle, '#2563eb', '#0a0a0a', a.id, sub);

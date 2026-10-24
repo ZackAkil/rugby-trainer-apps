@@ -46,9 +46,9 @@ export function createInitialGame() {
     lastRepReason: '',
     lastRepBreakdown: [],
     attackers: [
-      { id: 'A1', x: ruckX, y: ruckY, vx: 0, vy: 0, angle: -Math.PI / 2, role: 'TAGGED' },
+      { id: 'A3', x: ruckX, y: ruckY, vx: 0, vy: 0, angle: -Math.PI / 2, role: 'TAGGED' },
       { id: 'A2', x: ruckX, y: ruckY + 28, vx: 0, vy: 0, angle: -Math.PI / 2, role: 'SCRUM_HALF' },
-      { id: 'A3', x: ruckX + 135, y: ruckY + 230, vx: 0, vy: 0, angle: -Math.PI / 2, role: 'RUNNER' },
+      { id: 'A1', x: ruckX + 135, y: ruckY + 230, vx: 0, vy: 0, angle: -Math.PI / 2, role: 'RUNNER' },
     ],
     defenders: [
       { id: 'D1', x: ruckX + 20, y: ruckY - 10, vx: 0, vy: 0, angle: Math.PI / 2, role: 'MARKER' },
@@ -77,8 +77,13 @@ function rotateRolesAfterTag(state, catcher, tagger) {
   const prevSH = state.attackers.find((a) => a.role === 'SCRUM_HALF');
 
   catcher.role = 'TAGGED';
+  catcher.id = 'A3';
+
   prevSH.role = 'SCRUM_HALF';
+  prevSH.id = 'A2';
+
   prevTagged.role = 'RUNNER';
+  prevTagged.id = 'A1';
 
   state.defenders.forEach((d) => {
     d.role = d === tagger ? 'MARKER' : 'LINE';
