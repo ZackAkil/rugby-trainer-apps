@@ -1,11 +1,10 @@
-# 2-on-1 Lab
-## https://zackakil.github.io/rugby-trainer-apps/
+# Rugby Lab
 
-A minimal 2D top-down web app for practicing 2-on-1 rugby pass decision-making and timing.
+A collection of minimal 2D top-down web apps for practicing rugby decision-making and timing.
 
 ## Quick Start
 
-Zero build step or dependencies. Serve the static files with any local HTTP server (required for ES modules):
+Zero build step or dependencies. Serve the root folder with any local HTTP server:
 
 ```bash
 python3 -m http.server 8000
@@ -13,27 +12,19 @@ python3 -m http.server 8000
 npx serve .
 ```
 
-Open `http://localhost:8000`.
+Open `http://localhost:8000` to view the drill launcher.
 
-## Project Structure
+## Drills
 
-- `index.html` — App shell, 10-rep history bar, canvas container, and modal overlays.
-- `style.css` — Sports-science lab theme, responsive layout, and color-coded state classes.
-- `simulation.js` — Pure 2D physics, ball lead calculation, defender steering/momentum, and without-replacement deck shuffling.
-- `renderer.js` — HTML5 Canvas pitch rendering and oriented isosceles triangle player drawing.
-- `app.js` — Game state loop, 10-rep routine scoring, input debouncing, and UI updates.
+- [`2-on-1-lab/`](./2-on-1-lab/) — 10-rep 2-on-1 pass timing vs randomized defender behaviors (`COMMIT_CARRIER`, `DRIFT_SUPPORT`, `SOFT_SHOW`, `BAIT_PASS`).
+- [`scrum-half-lab/`](./scrum-half-lab/) — 10-rep 3v3 tag rugby scrum-half swipe passing onto a moving line runner (scored `/10` per rep for a `/100` routine score).
 
-## Mechanics & Scoring
+## Shared Foundation (`shared/`)
 
-Each routine consists of **10 reps** sampled without replacement from a shuffled deck:
-- **3x** `COMMIT_CARRIER` — Hard press on ball carrier
-- **3x** `DRIFT_SUPPORT` — Early drift to support runner
-- **2x** `SOFT_SHOW` — Fake drift, late bite on carrier
-- **2x** `BAIT_PASS` — Press carrier, jump pass lane
+All drills share reusable, dependency-free ES modules and base styles:
 
-| Outcome | Points |
-| :--- | :--- |
-| **Try** | `+10` |
-| **Tackled** | `-2` |
-| **Forward / Missed Pass** | `-5` |
-| **Intercepted** | `-10` |
+- [`shared/math.js`](./shared/math.js) — 2D clamping, interpolation, angle blending, deck shuffling, bone constraints, and 2-bone inverse kinematics (`solveTwoBoneIK`).
+- [`shared/physics.js`](./shared/physics.js) — Pitch dimensions, inertia steering (`steerEntityWithInertia`), ball flight/bounce physics, and ragdoll detached-arm physics (`createRippedArmsState`, `stepRippedArmsPhysics`).
+- [`shared/canvas.js`](./shared/canvas.js) — Shared 2D lab canvas primitives (calibration grid, try zone, reference lines, player triangles, ball, IK arms, ragdoll arms, countdown badge, swipe vector).
+- [`shared/ui.js`](./shared/ui.js) — Cooldown debouncing, pointer-to-canvas coordinate mapping, 10-rep history chips, color-coded breakdown bullets, and summary cards.
+- [`shared/lab.css`](./shared/lab.css) — Shared monochrome/accent Lab UI stylesheet.

@@ -1,3 +1,8 @@
+import {
+  createCooldownController,
+  renderRepChips,
+  renderSummaryBoxes,
+} from '../shared/ui.js';
 import { PITCH, createRoutineDeck, createScenario, triggerPass, stepSimulation } from './simulation.js';
 import { renderPitch } from './renderer.js';
 
@@ -45,8 +50,8 @@ const repsEl = document.getElementById('score-reps');
 let stats = createInitialStats();
 let state = createScenario(stats.deck[0]);
 let lastRepDelta = 0;
-let lockedUntil = 0;
-let cooldownTimer = null;
+
+const { isLocked, setCooldown } = createCooldownController(syncButtonsDisabled);
 
 function createInitialStats() {
   return {
@@ -71,60 +76,8 @@ function syncButtonsDisabled() {
   welcomeStartBtn.disabled = coolingDown;
 }
 
-function setCooldown(ms) {
-  lockedUntil = performance.now() + ms;
-  syncButtonsDisabled();
-  if (cooldownTimer) clearTimeout(cooldownTimer);
-  cooldownTimer = setTimeout(() => {
-    syncButtonsDisabled();
-  }, ms);
-}
-
-function isLocked() {
-  return performance.now() < lockedUntil;
-}
-
 function formatDelta(pts) {
   return pts > 0 ? `+${pts} PTS` : `${pts} PTS`;
-}
-
-function renderRepHistory() {
-  repHistoryEl.innerHTML = '';
-  for (let i = 0; i < TOTAL_REPS; i++) {
-    const item = stats.history[i];
-    const chip = document.createElement('div');
-
-    if (item) {
-      const meta = OUTCOME_META[item.status] || { tag: '0', label: 'END', cls: '' };
-      chip.className = `rep-chip ${meta.cls}`;
-      chip.title = `Rep ${i + 1}: ${item.reason}`;
-      chip.innerHTML = `<span class="rep-num">#${i + 1}</span><span class="rep-tag">${meta.label}</span>`;
-    } else {
-      const isCurrent = i === stats.reps && state.status === 'RUNNING';
-      chip.className = `rep-chip ${isCurrent ? 'active' : ''}`;
-      chip.innerHTML = `<span class="rep-num">#${i + 1}</span><span class="rep-tag">&mdash;</span>`;
-    }
-
-    repHistoryEl.appendChild(chip);
-  }
-}
-
-function renderFinalResultList() {
-  const tackles = stats.carrierTackled + stats.supportTackled;
-  resultList.innerHTML = `
-    <div class="summary-box try">
-      <span class="summary-count">${stats.tries}</span>
-      <span class="summary-label">Tries (+10)</span>
-    </div>
-    <div class="summary-box tackle">
-      <span class="summary-count">${tackles}</span>
-      <span class="summary-label">Tackled (-2)</span>
-    </div>
-    <div class="summary-box intercept">
-      <span class="summary-count">${stats.intercepted}</span>
-      <span class="summary-label">Intercept (-10)</span>
-    </div>
-  `;
 }
 
 function getRoutineTip() {
@@ -146,7 +99,22 @@ function getRoutineTip() {
 function updateUI() {
   pointsEl.textContent = stats.points;
   repsEl.textContent = stats.reps;
-  renderRepHistory();
+
+  renderRepChips(
+    repHistoryEl,
+    TOTAL_REPS,
+    stats.history,
+    stats.reps,
+    state.status === 'RUNNING',
+    (item, idx) => {
+      const meta = OUTCOME_META[item.status] || { tag: '0', label: 'END', cls: '' };
+      return {
+        cls: meta.cls,
+        tag: meta.label,
+        title: `Rep ${idx + 1}: ${item.reason}`,
+      };
+    }
+  );
 
   if (state.status === 'READY') {
     statusBanner.textContent = '10-Rep Routine — Try +10 | Tackle -2 | Intercept -10';
@@ -164,12 +132,17 @@ function updateUI() {
     actionBtn.textContent = state.carrier.hasBall ? 'Pass Ball' : 'Ball Passed';
   } else if (stats.reps >= TOTAL_REPS) {
     const isStrong = stats.points >= 60;
+    const tackles = stats.carrierTackled + stats.supportTackled;
     statusBanner.textContent = `Routine Complete (${state.status.replace('_', ' ')}: ${formatDelta(lastRepDelta)})`;
     statusBanner.className = 'banner neutral';
     welcomeOverlay.className = 'result-overlay hidden';
     resultTitle.textContent = `FINAL SCORE: ${stats.points} PTS`;
     resultDetail.textContent = '10-Rep Totals';
-    renderFinalResultList();
+    renderSummaryBoxes(resultList, [
+      { cls: 'try', count: stats.tries, label: 'Tries (+10)' },
+      { cls: 'tackle', count: tackles, label: 'Tackled (-2)' },
+      { cls: 'intercept', count: stats.intercepted, label: 'Intercept (-10)' },
+    ]);
     resultList.className = 'result-list';
     resultTip.textContent = getRoutineTip();
     resultTip.className = 'result-tip';

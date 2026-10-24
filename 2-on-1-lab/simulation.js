@@ -1,8 +1,7 @@
-export const PITCH = {
-  WIDTH: 600,
-  HEIGHT: 750,
-  TRY_LINE_Y: 80,
-};
+import { shuffleDeck } from '../shared/math.js';
+import { PITCH_DEFAULT, steerEntityWithInertia } from '../shared/physics.js';
+
+export const PITCH = PITCH_DEFAULT;
 
 export const SPEEDS = {
   ATTACKER: 2.8,
@@ -39,12 +38,7 @@ const ROUTINE_DISTRIBUTION = [
 ];
 
 export function createRoutineDeck() {
-  const deck = [...ROUTINE_DISTRIBUTION];
-  for (let i = deck.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [deck[i], deck[j]] = [deck[j], deck[i]];
-  }
-  return deck;
+  return shuffleDeck(ROUTINE_DISTRIBUTION);
 }
 
 export function createScenario(defenderType) {
@@ -98,7 +92,6 @@ export function triggerPass(state) {
   state.ball.inFlight = true;
   state.ball.passOriginY = state.carrier.y;
 
-  // Calculate intercept time for ball to reach support's X coordinate laterally
   const dx = state.support.x - state.carrier.x;
   const lateralSpeed = SPEEDS.BALL * 0.92;
   const flightTime = Math.abs(dx) / lateralSpeed;
@@ -120,7 +113,7 @@ function updateDefender(state) {
   let targetX = carrier.x;
   let targetY = carrier.y;
   let speedMultiplier = 0.85;
-  let accel = 0.14; // Momentum / turning inertia (lower = heavier momentum)
+  let accel = 0.14;
 
   if (ball.inFlight) {
     targetX = support.x;
@@ -182,22 +175,7 @@ function updateDefender(state) {
     }
   }
 
-  const dx = targetX - defender.x;
-  const dy = targetY - defender.y;
-  const dist = Math.hypot(dx, dy);
-
-  if (dist > 1) {
-    const desiredSpeed = SPEEDS.DEFENDER * speedMultiplier;
-    const desiredVx = (dx / dist) * desiredSpeed;
-    const desiredVy = (dy / dist) * desiredSpeed;
-
-    defender.vx += (desiredVx - defender.vx) * accel;
-    defender.vy += (desiredVy - defender.vy) * accel;
-
-    if (Math.hypot(defender.vx, defender.vy) > 0.1) {
-      defender.angle = Math.atan2(defender.vy, defender.vx);
-    }
-  }
+  steerEntityWithInertia(defender, targetX, targetY, SPEEDS.DEFENDER * speedMultiplier, accel, true);
 }
 
 export function stepSimulation(state) {
@@ -205,7 +183,6 @@ export function stepSimulation(state) {
 
   const { carrier, support, defender, ball } = state;
 
-  // Keep support at legal pass depth behind carrier before pass
   if (carrier.hasBall) {
     const desiredSupportY = carrier.y + 35;
     const dy = desiredSupportY - support.y;
@@ -221,10 +198,7 @@ export function stepSimulation(state) {
   support.y += support.vy;
 
   updateDefender(state);
-  defender.x += defender.vx;
-  defender.y += defender.vy;
 
-  // Ball position update
   if (carrier.hasBall) {
     ball.x = carrier.x;
     ball.y = carrier.y;
@@ -235,7 +209,6 @@ export function stepSimulation(state) {
     ball.x += ball.vx;
     ball.y += ball.vy;
 
-    // Check intercept
     if (Math.hypot(ball.x - defender.x, ball.y - defender.y) <= RADII.INTERCEPT) {
       state.status = 'INTERCEPTED';
       state.outcomeReason = `Intercepted (${state.defenderType.label})`;
@@ -243,7 +216,6 @@ export function stepSimulation(state) {
       return;
     }
 
-    // Check catch by support
     if (Math.hypot(ball.x - support.x, ball.y - support.y) <= RADII.CATCH) {
       ball.inFlight = false;
       support.hasBall = true;
@@ -255,7 +227,6 @@ export function stepSimulation(state) {
       }
     }
 
-    // Check missed pass out of bounds
     if (ball.x < 0 || ball.x > PITCH.WIDTH || ball.y < 0 || ball.y > PITCH.HEIGHT) {
       state.status = 'MISSED_PASS';
       state.outcomeReason = 'Pass missed support';
@@ -264,7 +235,6 @@ export function stepSimulation(state) {
     }
   }
 
-  // Check tackle on active ball holder
   const holder = carrier.hasBall ? carrier : support.hasBall ? support : null;
   if (holder) {
     const tackleDist = Math.hypot(holder.x - defender.x, holder.y - defender.y);

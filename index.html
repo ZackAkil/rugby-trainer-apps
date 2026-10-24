@@ -2,57 +2,124 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>2-on-1 Lab</title>
-  <link rel="stylesheet" href="./style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rugby Lab</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: #f8f9fa;
+      color: #0a0a0a;
+      font-family: ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
+      display: flex;
+      justify-content: center;
+      padding: 40px 20px;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 540px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .header {
+      border-bottom: 2px solid #0a0a0a;
+      padding-bottom: 10px;
+    }
+
+    .title {
+      font-size: 1.2rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .subtitle {
+      margin-top: 4px;
+      font-size: 0.8rem;
+      color: #52525b;
+    }
+
+    .drill-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .drill-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 20px;
+      background: #ffffff;
+      border: 2px solid #0a0a0a;
+      box-shadow: 4px 4px 0px #0a0a0a;
+      text-decoration: none;
+      color: #0a0a0a;
+      transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
+    }
+
+    .drill-card:hover {
+      background: #eff6ff;
+      transform: translate(-1px, -1px);
+      box-shadow: 5px 5px 0px #0a0a0a;
+    }
+
+    .drill-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .drill-name {
+      font-size: 1rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .drill-desc {
+      font-size: 0.78rem;
+      color: #52525b;
+    }
+
+    .drill-arrow {
+      font-size: 1.1rem;
+      font-weight: 800;
+    }
+  </style>
 </head>
 <body>
-  <main class="app-container">
+  <main class="container">
     <header class="header">
-      <h1 class="title">2-on-1 Lab</h1>
-      <div class="score">
-        Rep <span id="score-reps">0</span>/10 &bull; Pts: <span id="score-points">0</span>
-      </div>
+      <h1 class="title">Rugby Lab</h1>
+      <p class="subtitle">Decision &amp; Timing Drills</p>
     </header>
 
-    <div id="rep-history" class="rep-history"></div>
-
-    <div id="status-banner" class="banner neutral">
-      Tap or press SPACE to begin
-    </div>
-
-    <div class="canvas-wrapper">
-      <canvas id="pitch"></canvas>
-
-      <div id="welcome-overlay" class="result-overlay">
-        <div class="result-title">2-ON-1 LAB</div>
-        <div class="welcome-body">
-          <p>10 reps of <span class="txt-blue">2-on-1 attack</span> vs <span class="txt-red">the defender</span>. <strong>Tap pitch</strong> or press <strong>SPACE</strong> to pass.</p>
-          <div class="welcome-scoring">
-            <span class="score-pill try">TRY +10</span>
-            <span class="score-pill tackle">TACKLE -2</span>
-            <span class="score-pill intercept">INTERCEPT -10</span>
-          </div>
+    <nav class="drill-list">
+      <a href="./2-on-1-lab/" class="drill-card">
+        <div class="drill-info">
+          <span class="drill-name">2-on-1 Lab</span>
+          <span class="drill-desc">10-rep 2-on-1 pass timing vs randomized defender reads</span>
         </div>
-        <button id="welcome-start-btn" class="result-restart-btn">Start 10-Rep Routine</button>
-      </div>
-
-      <div id="result-overlay" class="result-overlay hidden">
-        <div id="result-title" class="result-title"></div>
-        <div id="result-detail" class="result-detail"></div>
-        <div id="result-list" class="result-list hidden"></div>
-        <div id="result-tip" class="result-tip hidden"></div>
-        <div id="result-hint" class="result-hint">Tap or press SPACE for next rep</div>
-        <button id="result-restart-btn" class="result-restart-btn hidden">Restart 10-Rep Routine</button>
-      </div>
-    </div>
-
-    <div class="controls">
-      <button id="action-btn" class="primary">Start Run (Space)</button>
-      <button id="reset-btn">Reset (R)</button>
-    </div>
+        <span class="drill-arrow">&rarr;</span>
+      </a>
+      <a href="./scrum-half-lab/" class="drill-card">
+        <div class="drill-info">
+          <span class="drill-name">Scrum-Half Lab</span>
+          <span class="drill-desc">10-rep swipe-to-pass service onto a moving line runner (scored /100)</span>
+        </div>
+        <span class="drill-arrow">&rarr;</span>
+      </a>
+    </nav>
   </main>
-
-  <script type="module" src="./app.js"></script>
 </body>
 </html>

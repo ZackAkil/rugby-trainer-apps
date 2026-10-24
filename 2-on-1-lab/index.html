@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>2-on-1 Lab</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <main class="app-container">
+    <header class="header">
+      <div class="header-left">
+        <a href="../" class="back-link">&larr; Lab</a>
+        <h1 class="title">2-on-1 Lab</h1>
+      </div>
+      <div class="score">
+        Rep <span id="score-reps">0</span>/10 &bull; Pts: <span id="score-points">0</span>
+      </div>
+    </header>
+
+    <div id="rep-history" class="rep-history"></div>
+
+    <div id="status-banner" class="banner neutral">
+      Tap or press SPACE to begin
+    </div>
+
+    <div class="canvas-wrapper">
+      <canvas id="pitch"></canvas>
+
+      <div id="welcome-overlay" class="result-overlay">
+        <div class="result-title">2-ON-1 LAB</div>
+        <div class="welcome-body">
+          <p>10 reps of <span class="txt-blue">2-on-1 attack</span> vs <span class="txt-red">the defender</span>. <strong>Tap pitch</strong> or press <strong>SPACE</strong> to pass.</p>
+          <div class="welcome-scoring">
+            <span class="score-pill try">TRY +10</span>
+            <span class="score-pill tackle">TACKLE -2</span>
+            <span class="score-pill intercept">INTERCEPT -10</span>
+          </div>
+        </div>
+        <button id="welcome-start-btn" class="result-restart-btn">Start 10-Rep Routine</button>
+      </div>
+
+      <div id="result-overlay" class="result-overlay hidden">
+        <div id="result-title" class="result-title"></div>
+        <div id="result-detail" class="result-detail"></div>
+        <div id="result-list" class="result-list hidden"></div>
+        <div id="result-tip" class="result-tip hidden"></div>
+        <div id="result-hint" class="result-hint">Tap or press SPACE for next rep</div>
+        <button id="result-restart-btn" class="result-restart-btn hidden">Restart 10-Rep Routine</button>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="action-btn" class="primary">Start Run (Space)</button>
+      <button id="reset-btn">Reset (R)</button>
+    </div>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
