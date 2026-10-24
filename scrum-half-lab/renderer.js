@@ -122,7 +122,7 @@ function drawCatchEffect(ctx, runner, state) {
     ctx.fillStyle = '#dc2626';
     ctx.font = '800 11px ui-monospace, SFMono-Regular, Menlo, monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('STOPPED!', runner.x, runner.y - 34);
+    ctx.fillText('HOSPITAL PASS!', runner.x, runner.y - 34);
   }
   ctx.restore();
 }

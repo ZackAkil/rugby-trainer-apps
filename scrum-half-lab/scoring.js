@@ -74,7 +74,7 @@ export function evaluateZoneCatch(state, runner, ball) {
     speedMult = 0.65;
     breakdown.push({
       tier: 'ugly',
-      text: 'Runner Target: Passed way behind the runner — forced them to stop and step back',
+      text: 'Runner Target: Hospital pass way behind the runner — forced them to step back',
     });
   }
 
@@ -162,7 +162,7 @@ export function evaluateZoneCatch(state, runner, ball) {
   else if (effect === 'BOOST') label = 'IN FRONT — SPEED BOOST';
   else if (effect === 'STRIDE') label = 'CAUGHT AT BODY';
   else if (effect === 'SLOW') label = 'BEHIND RUNNER — SLOWED';
-  else if (effect === 'STOP') label = 'WAY BEHIND — STOPPED';
+  else if (effect === 'STOP') label = 'WAY BEHIND — HOSPITAL PASS';
 
   return {
     score,

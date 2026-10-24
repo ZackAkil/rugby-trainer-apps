@@ -1,10 +1,24 @@
 import {
+  initMuteButton,
   createCooldownController,
   toCanvasCoords,
   renderRepChips,
   renderBreakdownList,
   renderSummaryBoxes,
 } from '../shared/ui.js';
+import {
+  unlockAudio,
+  playCountdownTick,
+  playWindup,
+  playPass,
+  playCatchBoost,
+  playCatchNormal,
+  playCatchSlow,
+  playArmsRipped,
+  playTag,
+  playTry,
+  playError,
+} from '../shared/audio.js';
 import {
   PITCH,
   createInitialGame,
@@ -39,6 +53,7 @@ const actionBtn = document.getElementById('action-btn');
 const resetBtn = document.getElementById('reset-btn');
 const pointsEl = document.getElementById('score-points');
 const repsEl = document.getElementById('score-reps');
+initMuteButton(document.getElementById('mute-btn'));
 
 let state = createInitialGame();
 let stats = createInitialStats();
@@ -222,6 +237,7 @@ function resetRoutine() {
 const canvasWrapper = canvas.parentElement;
 
 canvasWrapper.addEventListener('pointerdown', (e) => {
+  unlockAudio();
   if (e.target.closest('button')) return;
   e.preventDefault();
 
@@ -241,6 +257,7 @@ canvasWrapper.addEventListener('pointerdown', (e) => {
       }
     }
     triggerPassWindup(state);
+    playWindup();
   } else if (state.phase === 'REP_END' && stats.reps < TOTAL_REPS) {
     advanceFlow();
   } else if (state.phase === 'READY') {
@@ -266,6 +283,8 @@ function finishDrag(e) {
     const dx = dragState.currX - dragState.startX;
     const dy = dragState.currY - dragState.startY;
     if (launchSwipePass(state, dx, dy)) {
+      const powerRatio = Math.min(1, Math.max(0, (state.ball.launchSpeed - 2.5) / 11.7));
+      playPass(powerRatio);
       updateUI();
     }
   } else if (state.phase === 'COUNTDOWN') {
@@ -276,19 +295,28 @@ function finishDrag(e) {
 window.addEventListener('pointerup', finishDrag);
 window.addEventListener('pointercancel', finishDrag);
 
-actionBtn.addEventListener('click', advanceFlow);
-resetBtn.addEventListener('click', resetRoutine);
+actionBtn.addEventListener('click', () => {
+  unlockAudio();
+  advanceFlow();
+});
+resetBtn.addEventListener('click', () => {
+  unlockAudio();
+  resetRoutine();
+});
 welcomeStartBtn.addEventListener('click', (e) => {
   e.stopPropagation();
+  unlockAudio();
   advanceFlow();
 });
 resultRestartBtn.addEventListener('click', (e) => {
   e.stopPropagation();
+  unlockAudio();
   startNewRoutine();
 });
 
 window.addEventListener('keydown', (e) => {
   if (e.repeat) return;
+  unlockAudio();
   if (e.code === 'Space') {
     e.preventDefault();
     if (state.phase === 'REP_END' && stats.reps < TOTAL_REPS) {
@@ -304,10 +332,36 @@ window.addEventListener('keydown', (e) => {
 
 function loop() {
   const prevPhase = state.phase;
+  const prevCountdown = state.countdownNumber;
+  const prevArmsRipped = state.armsRipped;
+
   stepSimulation(state);
 
+  if (state.phase === 'COUNTDOWN' && prevPhase !== 'COUNTDOWN') {
+    playCountdownTick(false);
+  } else if (state.phase === 'COUNTDOWN' && state.countdownNumber !== prevCountdown) {
+    playCountdownTick(false);
+  } else if (prevPhase === 'COUNTDOWN' && state.phase === 'PASS_WINDOW') {
+    playCountdownTick(true);
+  }
+
+  if (!prevArmsRipped && state.armsRipped) {
+    playArmsRipped();
+  }
+
   if (prevPhase !== state.phase) {
-    if (state.phase === 'REP_END') {
+    if (state.phase === 'RUN_TO_TAG') {
+      if (state.catchEffect === 'BOOST') playCatchBoost();
+      else if (state.catchEffect === 'STRIDE') playCatchNormal();
+      else playCatchSlow();
+    } else if (state.phase === 'REP_END') {
+      if (prevPhase === 'RUN_TO_TAG') {
+        if (state.lastRepLabel.includes('TRY')) playTry();
+        else playTag();
+      } else if (!state.armsRipped) {
+        playError();
+      }
+
       stats.reps += 1;
       stats.points += state.lastRepScore;
       stats.history.push({

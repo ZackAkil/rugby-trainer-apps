@@ -1,8 +1,18 @@
 import {
+  initMuteButton,
   createCooldownController,
   renderRepChips,
   renderSummaryBoxes,
 } from '../shared/ui.js';
+import {
+  unlockAudio,
+  playCountdownTick,
+  playPass,
+  playCatchNormal,
+  playTag,
+  playTry,
+  playError,
+} from '../shared/audio.js';
 import { PITCH, createRoutineDeck, createScenario, triggerPass, stepSimulation } from './simulation.js';
 import { renderPitch } from './renderer.js';
 
@@ -46,6 +56,7 @@ const actionBtn = document.getElementById('action-btn');
 const resetBtn = document.getElementById('reset-btn');
 const pointsEl = document.getElementById('score-points');
 const repsEl = document.getElementById('score-reps');
+initMuteButton(document.getElementById('mute-btn'));
 
 let stats = createInitialStats();
 let state = createScenario(stats.deck[0]);
@@ -170,36 +181,43 @@ function updateUI() {
 }
 
 function handlePrimaryAction() {
+  unlockAudio();
   if (isLocked()) return;
 
   if (state.status === 'READY') {
     state.status = 'RUNNING';
+    playCountdownTick(true);
     setCooldown(ACTION_DEBOUNCE_MS);
     updateUI();
   } else if (state.status === 'RUNNING') {
     if (state.carrier.hasBall) {
       triggerPass(state);
+      playPass(0.6);
       setCooldown(ACTION_DEBOUNCE_MS);
       updateUI();
     }
   } else if (stats.reps < TOTAL_REPS) {
     state = createScenario(stats.deck[stats.reps]);
     state.status = 'RUNNING';
+    playCountdownTick(true);
     setCooldown(ACTION_DEBOUNCE_MS);
     updateUI();
   }
 }
 
 function startNewRoutine() {
+  unlockAudio();
   if (isLocked()) return;
   stats = createInitialStats();
   state = createScenario(stats.deck[0]);
   state.status = 'RUNNING';
+  playCountdownTick(true);
   setCooldown(ACTION_DEBOUNCE_MS);
   updateUI();
 }
 
 function resetRoutine() {
+  unlockAudio();
   if (isLocked()) return;
   stats = createInitialStats();
   state = createScenario(stats.deck[0]);
@@ -238,9 +256,18 @@ window.addEventListener('keydown', (e) => {
 
 function loop() {
   const prevStatus = state.status;
+  const prevSupportHadBall = state.support.hasBall;
   stepSimulation(state);
 
+  if (!prevSupportHadBall && state.support.hasBall && state.status === 'RUNNING') {
+    playCatchNormal();
+  }
+
   if (prevStatus === 'RUNNING' && state.status !== 'RUNNING') {
+    if (state.status === 'TRY') playTry();
+    else if (state.status === 'TACKLED') playTag();
+    else playError();
+
     stats.reps += 1;
     lastRepDelta = POINTS[state.status] ?? 0;
     stats.points += lastRepDelta;

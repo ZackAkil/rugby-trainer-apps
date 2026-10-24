@@ -36,7 +36,7 @@ body {
 .header {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   border-bottom: 2px solid #0a0a0a;
   padding-bottom: 6px;
 }
@@ -44,6 +44,12 @@ body {
 .header-left {
   display: flex;
   align-items: baseline;
+  gap: 10px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
   gap: 10px;
 }
 
@@ -78,6 +84,22 @@ body {
 .score span {
   color: #0a0a0a;
   font-weight: 700;
+}
+
+.mute-btn {
+  padding: 3px 7px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  border: 1.5px solid #0a0a0a;
+  background: #ffffff;
+  color: #0a0a0a;
+}
+
+.mute-btn.muted {
+  background: #f4f4f5;
+  color: #71717a;
+  border-color: #a1a1aa;
 }
 
 .rep-history {

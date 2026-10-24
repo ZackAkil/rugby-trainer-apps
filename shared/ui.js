@@ -1,4 +1,24 @@
 import { PITCH_DEFAULT } from './physics.js';
+import { isAudioMuted, toggleAudioMute } from './audio.js';
+
+export function initMuteButton(btnEl) {
+  if (!btnEl) return;
+
+  function sync() {
+    const muted = isAudioMuted();
+    btnEl.textContent = muted ? 'SFX: OFF' : 'SFX: ON';
+    btnEl.classList.toggle('muted', muted);
+    btnEl.setAttribute('aria-pressed', String(muted));
+  }
+
+  btnEl.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleAudioMute();
+    sync();
+  });
+
+  sync();
+}
 
 export function createCooldownController(onStateChange) {
   let lockedUntil = 0;
