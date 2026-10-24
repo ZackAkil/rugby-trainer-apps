@@ -71,10 +71,10 @@ export function evaluateZoneCatch(state, runner, ball) {
   } else {
     baseScore = 3;
     effect = 'STOP';
-    speedMult = 0.0;
+    speedMult = 0.65;
     breakdown.push({
       tier: 'ugly',
-      text: 'Runner Target: Passed way behind the runner — forced them to stop completely',
+      text: 'Runner Target: Passed way behind the runner — forced them to stop and step back',
     });
   }
 

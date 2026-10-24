@@ -332,8 +332,9 @@ export function stepSimulation(state) {
   if (state.phase === 'PASS_WINDOW') {
     state.runElapsedFrames += 1;
 
+    // Quickly reach steady running pace in the first few frames, then hold a constant pace
     const desiredVy = -state.runnerTopSpeed;
-    runner.vy += (desiredVy - runner.vy) * 0.045;
+    runner.vy += (desiredVy - runner.vy) * 0.25;
     runner.y += runner.vy;
     runner.angle = -Math.PI / 2;
 
@@ -376,13 +377,9 @@ export function stepSimulation(state) {
       return;
     }
 
-    const dxToRunner = Math.abs(ball.x - runner.x);
-    const relY = ball.y - runner.y;
-    const approachingGreen =
-      dxToRunner < 55 && relY >= TARGET_ZONES.GREEN_TOP - 8 && relY <= TARGET_ZONES.GREEN_BOT;
-
-    const desiredVy = -(approachingGreen ? state.runnerTopSpeed * 1.3 : state.runnerTopSpeed);
-    runner.vy += (desiredVy - runner.vy) * (approachingGreen ? 0.14 : 0.05);
+    // Runner maintains their steady pace while the ball is in flight
+    const desiredVy = -state.runnerTopSpeed;
+    runner.vy += (desiredVy - runner.vy) * 0.25;
     runner.y += runner.vy;
     runner.angle = -Math.PI / 2;
 
@@ -432,9 +429,11 @@ export function stepSimulation(state) {
       if (result.effect === 'BOOST') {
         runner.vy = -state.runnerTargetSpeed;
       } else if (result.effect === 'STOP') {
-        runner.vy *= 0.15;
+        // Runner checks their run and steps back slightly to gather the ball behind them
+        runner.vy = 1.25;
+        state.catchEffectTimer = 32;
       } else if (result.effect === 'SLOW') {
-        runner.vy *= 0.4;
+        runner.vy *= 0.35;
       }
 
       state.phase = result.score === 0 ? 'REP_END' : 'RUN_TO_TAG';
@@ -478,14 +477,21 @@ export function stepSimulation(state) {
       state.catchEffectTimer -= 1;
     }
 
-    const desiredVy = -state.runnerTargetSpeed;
-    runner.vy += (desiredVy - runner.vy) * 0.12;
+    const steppingBack = state.catchEffect === 'STOP' && state.catchEffectTimer > 18;
+    const desiredVy = steppingBack ? 0.9 : -state.runnerTargetSpeed;
+    const accel = state.catchEffect === 'STOP' ? 0.08 : 0.12;
+    runner.vy += (desiredVy - runner.vy) * accel;
     runner.y += runner.vy;
     runner.angle = -Math.PI / 2;
 
-    const targetCarryY = state.catchEffect === 'BOOST' ? -22 : state.catchEffect === 'STOP' ? 14 : -14;
-    state.catchOffsetX += (0 - state.catchOffsetX) * 0.06;
-    state.catchOffsetY += (targetCarryY - state.catchOffsetY) * 0.06;
+    const targetCarryY =
+      state.catchEffect === 'BOOST'
+        ? -22
+        : steppingBack
+        ? 14
+        : -14;
+    state.catchOffsetX += (0 - state.catchOffsetX) * 0.08;
+    state.catchOffsetY += (targetCarryY - state.catchOffsetY) * 0.08;
     ball.x = runner.x + state.catchOffsetX;
     ball.y = runner.y + state.catchOffsetY;
 
