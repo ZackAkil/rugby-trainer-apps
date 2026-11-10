@@ -1,0 +1,329 @@
+import {
+  initMuteButton,
+  createCooldownController,
+  renderRepChips,
+  renderSummaryBoxes,
+} from '../shared/ui.js';
+import {
+  unlockAudio,
+  playCountdownTick,
+  playWindup,
+  playPass,
+  playCatchNormal,
+  playTag,
+  playTry,
+  playError,
+} from '../shared/audio.js';
+import {
+  PITCH,
+  createRoutineDeck,
+  createScenario,
+  triggerCutLine,
+  triggerSwitchPass,
+  stepSimulation,
+} from './simulation.js';
+import { renderPitch } from './renderer.js';
+
+const TOTAL_REPS = 10;
+const REP_END_COOLDOWN_MS = 650;
+const REP_START_DEBOUNCE_MS = 300;
+const STEP_DEBOUNCE_MS = 85;
+
+const POINTS = {
+  TRY: 10,
+  TACKLED: -2,
+  FORWARD_PASS: -5,
+  MISSED_PASS: -5,
+  INTERCEPTED: -10,
+};
+
+const OUTCOME_META = {
+  TRY: { tag: '+10', label: 'TRY', cls: 'try' },
+  TACKLED: { tag: '-2', label: 'TKL', cls: 'tackle' },
+  FORWARD_PASS: { tag: '-5', label: 'FWD', cls: 'error' },
+  MISSED_PASS: { tag: '-5', label: 'OUT', cls: 'error' },
+  INTERCEPTED: { tag: '-10', label: 'INT', cls: 'intercept' },
+};
+
+const canvas = document.getElementById('pitch');
+const ctx = canvas.getContext('2d');
+canvas.width = PITCH.WIDTH;
+canvas.height = PITCH.HEIGHT;
+
+const statusBanner = document.getElementById('status-banner');
+const repHistoryEl = document.getElementById('rep-history');
+const welcomeOverlay = document.getElementById('welcome-overlay');
+const welcomeStartBtn = document.getElementById('welcome-start-btn');
+const resultOverlay = document.getElementById('result-overlay');
+const resultTitle = document.getElementById('result-title');
+const resultDetail = document.getElementById('result-detail');
+const resultList = document.getElementById('result-list');
+const resultTip = document.getElementById('result-tip');
+const resultHint = document.getElementById('result-hint');
+const resultRestartBtn = document.getElementById('result-restart-btn');
+const actionBtn = document.getElementById('action-btn');
+const resetBtn = document.getElementById('reset-btn');
+const pointsEl = document.getElementById('score-points');
+const repsEl = document.getElementById('score-reps');
+initMuteButton(document.getElementById('mute-btn'));
+
+let stats = createInitialStats();
+let state = createScenario(stats.deck[0]);
+let lastRepDelta = 0;
+
+const { isLocked, setCooldown } = createCooldownController(syncButtonsDisabled);
+
+function createInitialStats() {
+  return {
+    points: 0,
+    tries: 0,
+    reps: 0,
+    carrierTackled: 0,
+    runnerTackled: 0,
+    forwardPasses: 0,
+    intercepted: 0,
+    history: [],
+    deck: createRoutineDeck(),
+  };
+}
+
+function syncButtonsDisabled() {
+  const coolingDown = isLocked();
+  const passedInRun = state.status === 'RUNNING' && !state.carrier.hasBall;
+  const routineDone = state.status !== 'RUNNING' && state.status !== 'READY' && stats.reps >= TOTAL_REPS;
+
+  actionBtn.disabled = coolingDown || passedInRun || routineDone;
+  resultRestartBtn.disabled = coolingDown;
+  welcomeStartBtn.disabled = coolingDown;
+}
+
+function formatDelta(pts) {
+  return pts > 0 ? `+${pts} PTS` : `${pts} PTS`;
+}
+
+function getRoutineTip() {
+  if (stats.forwardPasses > 0) {
+    return 'Tip: Pop the switch pass as A2 crosses behind A1—waiting too long lets the runner overrun the ball.';
+  }
+  if (stats.intercepted > 0) {
+    return 'Tip: Watch D1 after the cut. If D1 jumps inside onto the switch lane, keep the ball and run outside.';
+  }
+  if (stats.tries >= 9) {
+    return 'Tip: Clinical switch timing. You fixed the defender and hit the inside seam cleanly.';
+  }
+  if (stats.carrierTackled >= stats.runnerTackled && stats.carrierTackled > 0) {
+    return 'Tip: Start the cut line earlier so A2 reaches your inside hip before D1 closes the space.';
+  }
+  if (stats.runnerTackled > 0) {
+    return 'Tip: Draw D1 outward with the ball carrier before cutting—cutting too early lets D1 slide back inside.';
+  }
+  return 'Tip: Hold your drift to pull D1 wide, trigger the cut, and pop flat into the seam.';
+}
+
+function updateUI() {
+  pointsEl.textContent = stats.points;
+  repsEl.textContent = stats.reps;
+
+  renderRepChips(
+    repHistoryEl,
+    TOTAL_REPS,
+    stats.history,
+    stats.reps,
+    state.status === 'RUNNING',
+    (item, idx) => {
+      const meta = OUTCOME_META[item.status] || { tag: '0', label: 'END', cls: '' };
+      return {
+        cls: meta.cls,
+        tag: meta.label,
+        title: `Rep ${idx + 1}: ${item.reason}`,
+      };
+    }
+  );
+
+  if (state.status === 'READY') {
+    statusBanner.textContent = '10-Rep Routine — Tap 1: Cut Line | Tap 2: Switch Pass';
+    statusBanner.className = 'banner neutral';
+    welcomeOverlay.className = 'result-overlay';
+    resultOverlay.className = 'result-overlay hidden';
+    actionBtn.textContent = 'Start Routine';
+  } else if (state.status === 'RUNNING') {
+    if (!state.cutStarted) {
+      statusBanner.textContent = `Rep ${stats.reps + 1}/${TOTAL_REPS} — Fix D1, then TAP / SPACE to run cut line`;
+      actionBtn.textContent = 'Run Cut Line (Space)';
+    } else if (state.carrier.hasBall) {
+      statusBanner.textContent = `Rep ${stats.reps + 1}/${TOTAL_REPS} — Cut active: TAP / SPACE to switch pass`;
+      actionBtn.textContent = 'Switch Pass (Space)';
+    } else {
+      statusBanner.textContent = `Rep ${stats.reps + 1}/${TOTAL_REPS} — Switch pass released...`;
+      actionBtn.textContent = 'Ball Passed';
+    }
+    statusBanner.className = 'banner running';
+    welcomeOverlay.className = 'result-overlay hidden';
+    resultOverlay.className = 'result-overlay hidden';
+  } else if (stats.reps >= TOTAL_REPS) {
+    const isStrong = stats.points >= 60;
+    const tackles = stats.carrierTackled + stats.runnerTackled;
+    statusBanner.textContent = `Routine Complete (${state.status.replace('_', ' ')}: ${formatDelta(lastRepDelta)})`;
+    statusBanner.className = 'banner neutral';
+    welcomeOverlay.className = 'result-overlay hidden';
+    resultTitle.textContent = `FINAL SCORE: ${stats.points} PTS`;
+    resultDetail.textContent = '10-Rep Totals';
+    renderSummaryBoxes(resultList, [
+      { cls: 'try', count: stats.tries, label: 'Tries (+10)' },
+      { cls: 'tackle', count: tackles, label: 'Tackled (-2)' },
+      { cls: 'intercept', count: stats.intercepted, label: 'Intercept (-10)' },
+    ]);
+    resultList.className = 'result-list';
+    resultTip.textContent = getRoutineTip();
+    resultTip.className = 'result-tip';
+    resultHint.className = 'result-hint hidden';
+    resultRestartBtn.className = 'result-restart-btn';
+    resultOverlay.className = `result-overlay ${isStrong ? 'success' : 'fail'}`;
+    actionBtn.textContent = 'Routine Complete';
+  } else {
+    const isSuccess = state.status === 'TRY';
+    statusBanner.textContent = `Rep ${stats.reps}/${TOTAL_REPS} complete`;
+    statusBanner.className = 'banner neutral';
+    welcomeOverlay.className = 'result-overlay hidden';
+    resultTitle.textContent = `${state.status.replace('_', ' ')} (${formatDelta(lastRepDelta)})`;
+    resultDetail.textContent = state.outcomeReason;
+    resultList.className = 'result-list hidden';
+    resultTip.className = 'result-tip hidden';
+    resultHint.textContent = `Tap or press SPACE for Rep ${stats.reps + 1}/${TOTAL_REPS}`;
+    resultHint.className = 'result-hint';
+    resultRestartBtn.className = 'result-restart-btn hidden';
+    resultOverlay.className = `result-overlay ${isSuccess ? 'success' : 'fail'}`;
+    actionBtn.textContent = `Next Rep (${stats.reps + 1}/${TOTAL_REPS})`;
+  }
+
+  syncButtonsDisabled();
+}
+
+function handlePrimaryAction() {
+  unlockAudio();
+  if (isLocked()) return;
+
+  if (state.status === 'READY') {
+    state.status = 'RUNNING';
+    playCountdownTick(true);
+    setCooldown(REP_START_DEBOUNCE_MS);
+    updateUI();
+  } else if (state.status === 'RUNNING') {
+    if (!state.cutStarted) {
+      if (triggerCutLine(state)) {
+        playWindup();
+        setCooldown(STEP_DEBOUNCE_MS);
+        updateUI();
+      }
+    } else if (state.carrier.hasBall) {
+      if (triggerSwitchPass(state)) {
+        playPass(0.55);
+        setCooldown(STEP_DEBOUNCE_MS);
+        updateUI();
+      }
+    }
+  } else if (stats.reps < TOTAL_REPS) {
+    state = createScenario(stats.deck[stats.reps]);
+    state.status = 'RUNNING';
+    playCountdownTick(true);
+    setCooldown(REP_START_DEBOUNCE_MS);
+    updateUI();
+  }
+}
+
+function startNewRoutine() {
+  unlockAudio();
+  if (isLocked()) return;
+  stats = createInitialStats();
+  state = createScenario(stats.deck[0]);
+  state.status = 'RUNNING';
+  playCountdownTick(true);
+  setCooldown(REP_START_DEBOUNCE_MS);
+  updateUI();
+}
+
+function resetRoutine() {
+  unlockAudio();
+  if (isLocked()) return;
+  stats = createInitialStats();
+  state = createScenario(stats.deck[0]);
+  setCooldown(REP_START_DEBOUNCE_MS);
+  updateUI();
+}
+
+actionBtn.addEventListener('click', handlePrimaryAction);
+resetBtn.addEventListener('click', resetRoutine);
+welcomeStartBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  handlePrimaryAction();
+});
+resultRestartBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  startNewRoutine();
+});
+canvas.parentElement.addEventListener('pointerdown', (e) => {
+  if (e.target.closest('button')) return;
+  e.preventDefault();
+  if (stats.reps >= TOTAL_REPS && state.status !== 'RUNNING') return;
+  handlePrimaryAction();
+});
+
+window.addEventListener('keydown', (e) => {
+  if (e.repeat) return;
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (stats.reps >= TOTAL_REPS && state.status !== 'RUNNING') return;
+    handlePrimaryAction();
+  } else if (e.code === 'KeyR') {
+    e.preventDefault();
+    resetRoutine();
+  }
+});
+
+function loop() {
+  const prevStatus = state.status;
+  const prevRunnerHadBall = state.runner.hasBall;
+  stepSimulation(state);
+
+  if (!prevRunnerHadBall && state.runner.hasBall && state.status === 'RUNNING') {
+    playCatchNormal();
+  }
+
+  if (prevStatus === 'RUNNING' && state.status !== 'RUNNING') {
+    if (state.status === 'TRY') playTry();
+    else if (state.status === 'TACKLED') playTag();
+    else playError();
+
+    stats.reps += 1;
+    lastRepDelta = POINTS[state.status] ?? 0;
+    stats.points += lastRepDelta;
+    stats.history.push({
+      status: state.status,
+      reason: state.outcomeReason,
+      delta: lastRepDelta,
+    });
+
+    if (state.status === 'TRY') {
+      stats.tries += 1;
+    } else if (state.status === 'TACKLED') {
+      if (state.outcomeReason.startsWith('Carrier')) {
+        stats.carrierTackled += 1;
+      } else {
+        stats.runnerTackled += 1;
+      }
+    } else if (state.status === 'FORWARD_PASS') {
+      stats.forwardPasses += 1;
+    } else if (state.status === 'INTERCEPTED') {
+      stats.intercepted += 1;
+    }
+
+    setCooldown(REP_END_COOLDOWN_MS);
+    updateUI();
+  }
+
+  renderPitch(ctx, state);
+  requestAnimationFrame(loop);
+}
+
+updateUI();
+requestAnimationFrame(loop);
