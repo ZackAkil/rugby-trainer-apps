@@ -19,6 +19,7 @@ Open `http://localhost:8000` to view the drill launcher.
 - [`2-on-1-lab/`](./2-on-1-lab/) — 10-rep 2-on-1 pass timing vs randomized defender behaviors (`COMMIT_CARRIER`, `DRIFT_SUPPORT`, `SOFT_SHOW`, `BAIT_PASS`).
 - [`scrum-half-lab/`](./scrum-half-lab/) — 10-rep 3v3 tag rugby scrum-half swipe passing onto a moving line runner (scored `/10` per rep for a `/100` routine score).
 - [`switch-lab/`](./switch-lab/) — 10-rep two-tap switch pass timing (tap once to trigger the support cut line, tap again to release the switch pass) vs 1 defender.
+- [`tag-lab/`](./tag-lab/) — 10-rep 1v1 defensive press, stutter-step deceleration, and auto-tag drill (scored `/10` per rep for a `/100` routine score).
 
 ## Shared Foundation (`shared/`)
 
