@@ -115,3 +115,25 @@ export function renderSummaryBoxes(listEl, boxes) {
     )
     .join('');
 }
+
+export function startFixedLoop(onStep, onRender, stepMs = 1000 / 60) {
+  let lastTime = null;
+  let accumulator = 0;
+
+  function frame(now) {
+    if (lastTime === null) lastTime = now;
+    const elapsed = Math.min(now - lastTime, stepMs * 4);
+    lastTime = now;
+    accumulator += elapsed;
+
+    while (accumulator >= stepMs) {
+      onStep();
+      accumulator -= stepMs;
+    }
+
+    onRender();
+    requestAnimationFrame(frame);
+  }
+
+  requestAnimationFrame(frame);
+}

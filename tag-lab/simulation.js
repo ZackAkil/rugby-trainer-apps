@@ -18,15 +18,15 @@ export const ATTACKER_PATTERNS = [
 ];
 
 // Defender top speed cannot exceed the attacker's speed
-const ATT_BASE_SPEED = 4.1;
-const ATT_ACCEL = 0.13;
-const DEF_MAX_SPEED = 3.9;
-const DEF_ACCEL = 0.17;
-const DEF_BRAKE = 0.78;
+const ATT_BASE_SPEED = 3.2;
+const ATT_ACCEL = 0.11;
+const DEF_MAX_SPEED = 3.05;
+const DEF_ACCEL = 0.14;
+const DEF_BRAKE = 0.8;
 
 // Above this relative speed, swiping at the tag misses and play continues
-const MAX_TAG_REL_SPEED = 4.6;
-const WHIFF_COOLDOWN_TICKS = 32;
+const MAX_TAG_REL_SPEED = 3.7;
+const WHIFF_COOLDOWN_TICKS = 36;
 const TAG_ANIM_FRAMES = 42;
 const COUNTDOWN_FRAMES_PER_STEP = 42;
 
@@ -204,9 +204,9 @@ function evaluateTagQuality(state) {
 
   // 2. Stutter-Step & Pace Match (/4) — lower relative speed = moving with attacker
   let stutterPts = 1;
-  if (relSpeed <= 2.2) stutterPts = 4;
-  else if (relSpeed <= 3.2) stutterPts = 3;
-  else if (relSpeed <= 4.0) stutterPts = 2;
+  if (relSpeed <= 1.8) stutterPts = 4;
+  else if (relSpeed <= 2.6) stutterPts = 3;
+  else if (relSpeed <= 3.3) stutterPts = 2;
 
   // 3. Square Body Position (/2)
   let squarePts = 0;

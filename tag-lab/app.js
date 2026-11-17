@@ -5,6 +5,7 @@ import {
   renderRepChips,
   renderBreakdownList,
   renderSummaryBoxes,
+  startFixedLoop,
 } from '../shared/ui.js';
 import {
   unlockAudio,
@@ -318,8 +319,8 @@ window.addEventListener('keyup', (e) => {
   keysDown.delete(e.code);
 });
 
-// Main loop
-function loop() {
+// Main loop (fixed 60Hz timestep across 60Hz/120Hz displays)
+function step() {
   const input = getMovementInput();
   const events = stepSimulation(state, input);
 
@@ -344,10 +345,7 @@ function loop() {
   if (events.outcome) {
     finishRep();
   }
-
-  renderPitch(ctx, state, input);
-  requestAnimationFrame(loop);
 }
 
 updateUI();
-requestAnimationFrame(loop);
+startFixedLoop(step, () => renderPitch(ctx, state, getMovementInput()));

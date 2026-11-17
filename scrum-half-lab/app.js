@@ -5,6 +5,7 @@ import {
   renderRepChips,
   renderBreakdownList,
   renderSummaryBoxes,
+  startFixedLoop,
 } from '../shared/ui.js';
 import {
   unlockAudio,
@@ -330,7 +331,7 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-function loop() {
+function step() {
   const prevPhase = state.phase;
   const prevCountdown = state.countdownNumber;
   const prevArmsRipped = state.armsRipped;
@@ -382,10 +383,7 @@ function loop() {
     }
     updateUI();
   }
-
-  renderPitch(ctx, state, dragState);
-  requestAnimationFrame(loop);
 }
 
 updateUI();
-requestAnimationFrame(loop);
+startFixedLoop(step, () => renderPitch(ctx, state, dragState));

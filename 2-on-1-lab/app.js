@@ -3,6 +3,7 @@ import {
   createCooldownController,
   renderRepChips,
   renderSummaryBoxes,
+  startFixedLoop,
 } from '../shared/ui.js';
 import {
   unlockAudio,
@@ -254,7 +255,7 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-function loop() {
+function step() {
   const prevStatus = state.status;
   const prevSupportHadBall = state.support.hasBall;
   stepSimulation(state);
@@ -292,10 +293,7 @@ function loop() {
     setCooldown(REP_END_COOLDOWN_MS);
     updateUI();
   }
-
-  renderPitch(ctx, state);
-  requestAnimationFrame(loop);
 }
 
 updateUI();
-requestAnimationFrame(loop);
+startFixedLoop(step, () => renderPitch(ctx, state));
